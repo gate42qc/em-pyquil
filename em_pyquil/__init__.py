@@ -65,7 +65,7 @@ def get_bitstrings_from_expectations(expectations: np.ndarray, shape: tuple) -> 
     return bitstrings
 
 
-def get_noisy_executable(qc: QuantumComputer, original_executable: Executable, noise_param: float):
+def get_native_program(qc: QuantumComputer, original_executable: Executable):
     original_program = Program(original_executable.program)
     native_program = original_program.copy_everything_except_instructions()
 
@@ -79,6 +79,10 @@ def get_noisy_executable(qc: QuantumComputer, original_executable: Executable, n
         else:
             native_program.inst(g)
 
+    return native_program
+
+
+def get_noisy_executable(qc: QuantumComputer, native_program: Program, noise_param: float):
     noisy = add_decoherence_noise(native_program, gate_time_1q=noise_param, gate_time_2q=3 * noise_param)
     return qc.compiler.native_quil_to_executable(noisy)
 
@@ -106,12 +110,14 @@ def apply_em(qc: QuantumComputer,
 
     def new_run(self, executable, *args, **kwargs):
         noise_params = noise_param_multiply_coefficients * base_gate_time
+        original_exec = executable.copy()
+        native_program = get_native_program(qc, original_exec)
+
         original_results = []
         trials, qubits = None, None
 
         for noise_param in noise_params:
-            original_exec = executable.copy()
-            new_exec = get_noisy_executable(qc, original_exec, noise_param)
+            new_exec = get_noisy_executable(qc, native_program, noise_param)
             original_exec.program = new_exec.program
 
             bitstring = original_run(executable=original_exec, *args, **kwargs)
@@ -147,7 +153,7 @@ def apply_noise(qc: QuantumComputer, gate_time=50e-9):
 
     def new_run(self, executable, *args, **kwargs):
         original_exec = executable.copy()
-        new_exec = get_noisy_executable(qc, original_exec, noise_param=gate_time)
+        new_exec = get_noisy_executable(qc, get_native_program(qc, original_exec), noise_param=gate_time)
         original_exec.program = new_exec.program
 
         return original_run(executable=original_exec, *args, **kwargs)
