@@ -1,12 +1,17 @@
 from setuptools import setup
 
+with open('README.md', 'r') as f:
+    long_description = f.read()
+
 
 setup(
     name="em-pyquil",
-    version='1.0.0',
+    version='1.0.1',
     author="Gate42 Quantum Computing Lab",
     author_email="team@gate42.org",
     description="A Python library implementing error mitigation on pyquil programs.",
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     url="https://github.com/maghamalyan/em-pyquil.git",
     packages=["em_pyquil"],
     license='MIT',
