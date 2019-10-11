@@ -1,5 +1,6 @@
 from pyquil import Program
 from pyquil.api import QuantumComputer
+from pyquil.gates import I
 from pyquil.api._quantum_computer import Executable
 from pyquil.noise import add_decoherence_noise
 import numpy as np
@@ -70,12 +71,15 @@ def get_native_program(qc: QuantumComputer, original_executable: Executable):
     native_program = original_program.copy_everything_except_instructions()
 
     # we
+    # todo: use cache
     for g in original_program:
         if isinstance(g, Gate):
-            native_gates = [i for i in
-                            qc.compiler.quil_to_native_quil(Program([g])).instructions
-                            if isinstance(i, Gate)]
-            native_program.inst(native_gates)
+            native_seq_for_gate = qc.compiler.quil_to_native_quil(Program([g])).instructions
+
+            for native_gate in native_seq_for_gate:
+                if isinstance(native_gate, Gate):
+                    native_program.inst(native_gate)
+                    native_program.inst([I(q) for q in native_gate.qubits])
         else:
             native_program.inst(g)
 
@@ -89,12 +93,14 @@ def get_noisy_executable(qc: QuantumComputer, native_program: Program, noise_par
 
 def apply_em(qc: QuantumComputer,
              base_gate_time: float = 50e-9,
-             order: int = 3) -> QuantumComputer:
+             order: int = 3,
+             noise_param_multiply_coefficients: np.ndarray = None) -> QuantumComputer:
     """
     Get new QuantumComputer which will run programs with EM technique applied.
     :param qc: QuantumComputer instance to patch
     :param base_gate_time: base noise parameter
-    :param order: coefficients to be used for stretching base noise parameter
+    :param order: order of the Richardson extrapolation
+    :param noise_param_multiply_coefficients: coefficients to be used for stretching base noise parameter
     :return: the new patched QuantumComputer instance
     """
 
@@ -106,7 +112,8 @@ def apply_em(qc: QuantumComputer,
 
     original_run = qc.run
 
-    noise_param_multiply_coefficients = np.arange(1, order + 2)
+    if noise_param_multiply_coefficients is None:
+        noise_param_multiply_coefficients = np.arange(1, order + 2)
 
     def new_run(self, executable, *args, **kwargs):
         noise_params = noise_param_multiply_coefficients * base_gate_time
