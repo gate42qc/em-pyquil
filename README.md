@@ -32,7 +32,7 @@ To instead install EMPyQuil as a PyPI package, do the following:
 
 If you would prefer to install EMPyQuil directly from source, do the following:
 
-`pip install git+https://github.com/maghamalyan/em-pyquil`
+`pip install git+https://github.com/gate42qc/em-pyquil`
 
 
 ## Usage
