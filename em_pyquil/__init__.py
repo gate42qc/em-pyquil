@@ -70,8 +70,6 @@ def get_native_program(qc: QuantumComputer, original_executable: Executable):
     original_program = Program(original_executable.program)
     native_program = original_program.copy_everything_except_instructions()
 
-    # we
-    # todo: use cache
     for g in original_program:
         if isinstance(g, Gate):
             native_seq_for_gate = qc.compiler.quil_to_native_quil(Program([g])).instructions

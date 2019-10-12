@@ -150,16 +150,20 @@ def run_with_qc(qc, lengths):
     data = []
 
     for i in lengths:
-        p = get_random_circuit(qc.qubits(), i)
-        res = qc.run_and_measure(p, 1000)
-        fidelity = 1 - np.mean(res[0])
-        data.append(fidelity)
+        fidelities = []
+        for j in range(20):
+            p = get_random_circuit(qc.qubits(), i)
+            res = qc.run_and_measure(p, 10000)
+            fidelity = 1 - np.mean(res[0] * res[1])
+            fidelities.append(fidelity)
+        mean_fidelity = np.mean(np.array(fidelities))
+        data.append(mean_fidelity)
 
     return data
 
 
 noisy_qc = apply_noise(get_qc("3q-qvm"))
-em_qc = apply_em(get_qc("3q-qvm"), order=2)
+em_qc = apply_em(get_qc("3q-qvm"))
 
 lengths = np.arange(2, 100, 5)
 
